@@ -64,9 +64,21 @@ jobs:
 
       - name: Ekspor APK Android
         run: |
+          # Isi keystore debug ke preset (Godot hanya menandatangani dari preset)
+          sed -i "s|^keystore/debug=.*|keystore/debug=\"$HOME/.android/debug.keystore\"|; s|^keystore/debug_user=.*|keystore/debug_user=\"androiddebugkey\"|; s|^keystore/debug_password=.*|keystore/debug_password=\"android\"|" export_presets.cfg
           ~/godot-bin/Godot_v4.3-stable_linux.x86_64 --headless --import || true
           ~/godot-bin/Godot_v4.3-stable_linux.x86_64 --headless --export-release "Android" build/kendang-tanjidor.apk
           ls -la build/
+
+      - name: Pastikan APK tertandatangani
+        run: |
+          APKSIGNER=$(find "$ANDROID_SDK_ROOT/build-tools" -name apksigner | sort | tail -1)
+          if ! "$APKSIGNER" verify build/kendang-tanjidor.apk; then
+            echo "APK belum tertandatangani — tandatangani manual"
+            "$APKSIGNER" sign --ks ~/.android/debug.keystore --ks-pass pass:android --key-pass pass:android --ks-key-alias androiddebugkey --out build/kt-signed.apk build/kendang-tanjidor.apk
+            mv build/kt-signed.apk build/kendang-tanjidor.apk
+            "$APKSIGNER" verify build/kendang-tanjidor.apk
+          fi
 
       - name: Unggah APK
         uses: actions/upload-artifact@v4
