@@ -1,0 +1,54 @@
+name: Android APK
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  build-apk:
+    runs-on: ubuntu-latest
+    container:
+      image: barichello/godot-ci:4.3.0
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Periksa perkakas
+        run: |
+          godot --version || /usr/local/bin/godot --version
+          echo "ANDROID_HOME=$ANDROID_HOME"
+          ls ~/.local/share/godot/export_templates/ || true
+          ls ~/.local/share/godot/templates/ || true
+
+      - name: Siapkan keystore debug & pengaturan editor
+        run: |
+          mkdir -p ~/.android ~/.config/godot build
+          if [ ! -f ~/.android/debug.keystore ]; then
+            keytool -genkeypair -v -keystore ~/.android/debug.keystore -alias androiddebugkey \
+              -storepass android -keypass android -keyalg RSA -keysize 2048 -validity 10000 \
+              -dname "CN=Android Debug,O=Android,C=US"
+          fi
+          SDK="${ANDROID_HOME:-/usr/lib/android-sdk}"
+          cat > ~/.config/godot/editor_settings-4.3.tres <<EOF
+          [gd_resource type="EditorSettings" load_steps=2 format=3]
+
+          [resource]
+          export/android/debug_keystore = "$HOME/.android/debug.keystore"
+          export/android/debug_keystore_user = "androiddebugkey"
+          export/android/debug_keystore_pass = "android"
+          export/android/android_sdk_path = "$SDK"
+          EOF
+          cat ~/.config/godot/editor_settings-4.3.tres
+
+      - name: Ekspor APK Android
+        run: |
+          godot --headless --import || true
+          godot --headless --export-release "Android" build/kendang-tanjidor.apk
+          ls -la build/
+
+      - name: Unggah APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: kendang-tanjidor-apk
+          path: build/kendang-tanjidor.apk
+          if-no-files-found: error
