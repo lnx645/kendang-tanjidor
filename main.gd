@@ -3,8 +3,9 @@ extends Node2D
 ## Pukul langsung multi-sentuh. Custom: tema kit, audio per pad, posisi pad,
 ## preset (simpan/muat/hapus), dan pemutar MP3 pengiring.
 
-const LEBAR := 1280.0
-const TINGGI := 720.0
+var LEBAR := 1280.0
+var TINGGI := 720.0
+var jari_pad := {}
 const JALUR_SIMPAN := "user://pengaturan.cfg"
 const JALUR_PRESET := "user://preset.cfg"
 
@@ -94,6 +95,23 @@ func _ready() -> void:
 	muat_pengaturan()
 	terapkan_tema()
 	bangun_ui()
+	sesuaikan_ukuran()
+	get_tree().root.size_changed.connect(sesuaikan_ukuran)
+	Engine.max_fps = 120
+	for pad in pads:
+		pad["nada"] = muat_nada(pad)
+	queue_redraw()
+
+func sesuaikan_ukuran() -> void:
+	var sz := get_viewport().get_visible_rect().size
+	if sz.x > 100 and sz.y > 100:
+		LEBAR = sz.x
+		TINGGI = sz.y
+	for p in [panel_tema, panel_preset, panel_suara, panel_mp3, panel_tentang]:
+		if p:
+			p.position = Vector2((LEBAR - 820) / 2, (TINGGI - 500) / 2)
+	if bar_atur:
+		bar_atur.position = Vector2((LEBAR - 900) / 2, TINGGI - 150)
 	queue_redraw()
 
 func siapkan_pemain() -> void:
@@ -278,17 +296,23 @@ func pukul(pad: Dictionary) -> void:
 	p.stream = nada
 	p.pitch_scale = rng.randf_range(0.97, 1.03)
 	p.play()
-	Input.vibrate_handheld(18)
+	Input.vibrate_handheld(12)
 	queue_redraw()
 
-func pad_di(pos: Vector2) -> Dictionary:
+func geo(pad: Dictionary) -> Dictionary:
+	var rx := float(pad["rx"]) * float(pad["skala"]) * LEBAR
+	var ry := rx
+	if String(pad["def"]["bentuk"]) == "blok":
+		ry = float(pad["ry"]) * float(pad["skala"]) * TINGGI
+	return {"c": Vector2(float(pad["x"]) * LEBAR, float(pad["y"]) * TINGGI), "rx": rx, "ry": ry}
+
+func pad_di(pos: Vector2, longgar: bool = false) -> Dictionary:
+	var faktor := 1.12 if longgar else 1.0
 	for i in range(pads.size() - 1, -1, -1):
 		var pad: Dictionary = pads[i]
-		var cx := float(pad["x"]) * LEBAR
-		var cy := float(pad["y"]) * TINGGI
-		var rx := float(pad["rx"]) * float(pad["skala"]) * LEBAR
-		var ry := float(pad["ry"]) * float(pad["skala"]) * TINGGI
-		var d := Vector2((pos.x - cx) / maxf(rx, 1.0), (pos.y - cy) / maxf(ry, 1.0))
+		var g := geo(pad)
+		var t: Vector2 = g["c"]
+		var d := Vector2((pos.x - t.x) / maxf(float(g["rx"]) * faktor, 1.0), (pos.y - t.y) / maxf(float(g["ry"]) * faktor, 1.0))
 		if d.length() <= 1.0:
 			return pad
 	return {}
@@ -308,13 +332,21 @@ func _unhandled_input(kejadian: InputEvent) -> void:
 						penggeser_ukuran.value = float(pad["skala"])
 					queue_redraw()
 			else:
-				var pad2 := pad_di(st.position)
+				var pad2 := pad_di(st.position, true)
 				if not pad2.is_empty():
 					pukul(pad2)
+					jari_pad[st.index] = String(pad2["def"]["id"])
 		else:
+			jari_pad.erase(st.index)
 			if modus_atur and not pad_seret.is_empty():
 				pad_seret = {}
 				simpan_pengaturan()
+	elif kejadian is InputEventScreenDrag and not modus_atur and panel_terbuka == "":
+		var sd2 := kejadian as InputEventScreenDrag
+		var pad5 := pad_di(sd2.position, true)
+		if not pad5.is_empty() and String(jari_pad.get(sd2.index, "")) != String(pad5["def"]["id"]):
+			pukul(pad5)
+			jari_pad[sd2.index] = String(pad5["def"]["id"])
 	elif kejadian is InputEventScreenDrag and modus_atur and not pad_seret.is_empty():
 		var sd := kejadian as InputEventScreenDrag
 		pad_seret["x"] = clampf(sd.position.x / LEBAR, 0.03, 0.97)
@@ -333,7 +365,7 @@ func _unhandled_input(kejadian: InputEvent) -> void:
 							penggeser_ukuran.value = float(pad3["skala"])
 						queue_redraw()
 				else:
-					var pad4 := pad_di(mb.position)
+					var pad4 := pad_di(mb.position, true)
 					if not pad4.is_empty():
 						pukul(pad4)
 			else:
@@ -409,8 +441,9 @@ func _draw() -> void:
 
 func gambar_nama(pad: Dictionary) -> void:
 	var def: Dictionary = pad["def"]
-	var tengah := Vector2(float(pad["x"]) * LEBAR, float(pad["y"]) * TINGGI)
-	var ry := float(pad["ry"]) * float(pad["skala"]) * TINGGI
+	var g := geo(pad)
+	var tengah: Vector2 = g["c"]
+	var ry := float(g["ry"])
 	var geser := ry + 24
 	if String(def["id"]) == "pak":
 		geser = 6
@@ -421,11 +454,10 @@ func gambar_nama(pad: Dictionary) -> void:
 func gambar_pad(pad: Dictionary) -> void:
 	var def: Dictionary = pad["def"]
 	var p := palet()
-	var cx := float(pad["x"]) * LEBAR
-	var cy := float(pad["y"]) * TINGGI
-	var rx := float(pad["rx"]) * float(pad["skala"]) * LEBAR
-	var ry := float(pad["ry"]) * float(pad["skala"]) * TINGGI
-	var tengah := Vector2(cx, cy)
+	var g := geo(pad)
+	var tengah: Vector2 = g["c"]
+	var rx := float(g["rx"])
+	var ry := float(g["ry"])
 	var kedip := float(pad["kedip"])
 	var bentuk := String(def["bentuk"])
 	var r := rx  # pad bulat: rx (px) dipakai sebagai jari-jari visual
@@ -839,7 +871,7 @@ func bangun_panel_tentang() -> void:
 	panel_tentang.add_child(v)
 	kepala_panel("Tentang & Kredit", v)
 	var isi := Label.new()
-	isi.text = "Kendang Virtual v2.1 — kit Kendang Bajidor (Sunda) tampak atas ala Real Drum. Bajidor itu kesenian Sunda — bukan Tanjidor Betawi.\n\nFitur: pukul multi-sentuh, Tema kit, Preset (simpan/muat/hapus konfigurasi), custom suara per pad (bawaan/impor MP3-WAV), mode Atur (geser & ukur pad, tersimpan per tema), pemutar MP3 pengiring.\n\nTombol UI: Kenney UI Pack (CC0) — kenney.nl. Semua suara kendang disintesis dari kode."
+	isi.text = "Kendang Virtual v2.2 — kit Kendang Bajidor (Sunda) tampak atas ala Real Drum. Bajidor itu kesenian Sunda — bukan Tanjidor Betawi.\n\nFitur: pukul multi-sentuh, Tema kit, Preset (simpan/muat/hapus konfigurasi), custom suara per pad (bawaan/impor MP3-WAV), mode Atur (geser & ukur pad, tersimpan per tema), pemutar MP3 pengiring.\n\nTombol UI: Kenney UI Pack (CC0) — kenney.nl. Semua suara kendang disintesis dari kode."
 	isi.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	isi.add_theme_font_size_override("font_size", 18)
 	isi.add_theme_color_override("font_color", Color(0.95, 0.9, 0.8))
