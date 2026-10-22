@@ -5,17 +5,25 @@ Kit kendang virtual ala Real Drum: tampak dari atas, pukul pad-padnya langsung d
 **Genre: Kendang Bajidor — kesenian Sunda** (bukan Tanjidor Betawi; nama repo tetap kendang-tanjidor).
 
 ## Isi kit
-DANG (tengah, terbesar) • TAK (kiri) • ANAK (kanan) • KETIPUNG • KULANTER • KECREK • KEMPUL • GONG • PAK (blok kayu). Multi-sentuh: pukul beberapa pad sekaligus.
+DANG (tengah, terbesar) • TAK (kiri) • ANAK (kanan) • KETIPUNG • KULANTER • KECREK • KEMPUL • GONG • PAK (blok kayu). Multi-sentuh + gesek antar pad (buat roll cepat).
 
 ## Fitur
-- **Tema (skin)** — Kayu Jati, Hitam Panggung (ala Real Drum), Merah Ukir, Latar Sendiri (gambar dari HP).
-- **Preset** — simpan/muat/hapus konfigurasi (tema + posisi & ukuran pad + suara tiap pad). Bawaan: "Panggung Klasik", "Rampak Rapat".
-- **Suara** — tiap pad bisa diganti suara bawaannya, atau impor berkas MP3/WAV dari HP.
-- **Atur** — seret posisi pad & atur ukurannya; tersimpan otomatis per tema.
+- **Layar penuh** mengikuti ukuran HP; latensi rendah (suara dimuat di depan, buffer audio kecil, 120 fps).
+- **Tema (skin)** — Kayu Jati, Hitam Panggung, Merah Ukir, Latar Sendiri (impor gambar).
+- **Preset** — simpan/muat/hapus + **ekspor/impor JSON** (folder Download/KendangVirtual).
+- **Suara** — ganti varian bawaan atau **impor MP3/WAV**; parser WAV mendukung 8/16/24/32-bit & float.
+- **Pemilih berkas dalam aplikasi** — memindai Download/Musik/Gambar/Dokumen; berkas pilihan disalin ke aplikasi. Tanpa dialog native.
+- **Atur** — seret posisi pad & atur ukuran (slider kustom); tersimpan per tema.
 - **MP3** — putar lagu dari HP lalu main kendang mengiringinya.
 
+## Arsitektur (clean architecture, satu tanggung jawab per berkas)
+- `scripts/main.gd` — composition root: merakit & merutekan input.
+- `scripts/domain/` — `data_kit.gd` (data pad/tema/letak), `state.gd` (keadaan + geometri).
+- `scripts/services/` — `bank_suara.gd` (muat & parse audio), `mesin_suara.gd` (polifoni + musik), `penyimpanan.gd` (pengaturan & preset), `berkas.gd` (pindai/salin/ekspor berkas).
+- `scripts/ui/` — `panggung.gd` (gambar kit), `hud.gd` (panel & pemilih berkas), `gaya.gd` (sistem desain "Emas Panggung"), `kontrol/` (`tombol_kustom.gd`, `geser_kustom.gd` — slider digambar penuh dari kode).
+
 ## Kredit
-- Tombol UI: Kenney UI Pack (CC0), kenney.nl.
+- UI: sistem desain kustom "Emas Panggung" (digambar prosedural dari kode).
 - Semua suara kendang disintesis dari kode.
 
-Dibangun dengan Godot 4.3. Riwayat: v1 game ritme (ditolak), v2.0 kendang tampak samping, v2.1 kit tampak atas.
+Dibangun dengan Godot 4.3. Riwayat: v1 ritme (ditolak), v2 tampak samping→kit atas, v3 arsitektur bersih + UI kustom + pemilih berkas internal.
