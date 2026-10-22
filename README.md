@@ -1,18 +1,23 @@
-# 🥁 Kendang Tanjidor
+# Kendang Virtual
 
-Game ritme kendang Betawi untuk Android (Godot 4.3). Sentuh sisi kendang mengikuti not yang jatuh mengikuti irama tanjidor!
+Kendang virtual ala Real Drum: pukul kendang tanjidor langsung dari layar HP.
 
-## Cara Main
-- **TAK** = kendang kecil (kiri), **DANG** = kendang besar (kanan).
-- Not jatuh dari atas — sentuh sisi yang benar tepat saat not menyentuh kendang: **HEBAT** (300 poin), **Bagus** (100), **Lepas** (kombo putus).
-- 3 lagu: *Jali Pagi* (100 BPM), *Ondel Lewat* (118 BPM), *Tanjidor Ngebut* (136 BPM) — nilai akhir S/A/B/C/D.
-- **Mode Bebas**: pukul kendang sesukamu + tombol nada terompet (Do Re Mi Sol La).
+## Cara main
+- **TAK** = kepala kecil (kiri), **DANG** = kepala besar (kanan), **PAK** = badan kendang.
+- Alat pendamping: Ketipung, Kecrek, Kempul, Gong, Terompet.
+- Multi-sentuh: pukul beberapa pad sekaligus seperti drum betulan.
 
-## Musik
-Seluruh suara & musik **disintesis dari kode** (`tools/buat_audio.py`, Python + NumPy) — kendang, kecrek, gong, terompet, tuba — tanpa berkas audio berhak cipta. Melodi lagu adalah komposisi orisinal bergaya tanjidor Betawi. Peta not per lagu ada di `data/lagu*.json`.
+## Fitur custom
+- **Skin** — 3 tampilan bawaan (Kayu Klasik, Kayu Merah, Foto Panggung) + impor gambar sendiri.
+- **Suara** — tiap pad bisa diganti suara bawaannya, atau impor berkas MP3/WAV dari HP.
+- **Atur** — seret posisi pad ke mana pun, atur ukurannya; tersimpan otomatis (tiap skin punya tata letak sendiri).
+- **MP3** — putar lagu dari HP lalu main kendang mengiringinya (tetap berputar saat panel ditutup).
 
-## Build APK
-APK dibangun otomatis oleh **GitHub Actions** (`.github/workflows/android.yml`, container Godot CI) setiap push ke `main` — unduh dari tab **Actions → artifact `kendang-tanjidor-apk`**, lalu install di HP (izinkan "sumber tidak dikenal").
+## Kredit aset
+- Ilustrasi kendang "Kayu Klasik": Zhmila, Wikimedia Commons, CC BY-SA 4.0.
+- Ilustrasi kendang "Kayu Merah": Vidiyans, Wikimedia Commons, CC BY-SA 4.0.
+- Foto "Foto Panggung" (Kendang Drum Indonesia): kontributor Wikimedia Commons, CC BY-SA 4.0.
+- Tombol UI: Kenney UI Pack (CC0), kenney.nl.
+- Semua suara kendang disintesis dari kode (tools/ tidak dipakai lagi di v2; lihat riwayat git v1).
 
-## Teknologi
-Godot 4.3 • GDScript • satu berkas logika `main.gd` • target Android (arm64), juga bisa diekspor ke Web.
+Dibangun dengan Godot 4.3. APK dibangun via GitHub Actions / ekspor lokal bertanda tangan debug.
