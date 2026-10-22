@@ -839,7 +839,7 @@ func bangun_panel_tentang() -> void:
 	panel_tentang.add_child(v)
 	kepala_panel("Tentang & Kredit", v)
 	var isi := Label.new()
-	isi.text = "Kendang Virtual v2.1 — kit kendang tanjidor tampak atas ala Real Drum.\n\nFitur: pukul multi-sentuh, Tema kit, Preset (simpan/muat/hapus konfigurasi), custom suara per pad (bawaan/impor MP3-WAV), mode Atur (geser & ukur pad, tersimpan per tema), pemutar MP3 pengiring.\n\nTombol UI: Kenney UI Pack (CC0) — kenney.nl. Semua suara kendang disintesis dari kode."
+	isi.text = "Kendang Virtual v2.1 — kit Kendang Bajidor (Sunda) tampak atas ala Real Drum. Bajidor itu kesenian Sunda — bukan Tanjidor Betawi.\n\nFitur: pukul multi-sentuh, Tema kit, Preset (simpan/muat/hapus konfigurasi), custom suara per pad (bawaan/impor MP3-WAV), mode Atur (geser & ukur pad, tersimpan per tema), pemutar MP3 pengiring.\n\nTombol UI: Kenney UI Pack (CC0) — kenney.nl. Semua suara kendang disintesis dari kode."
 	isi.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	isi.add_theme_font_size_override("font_size", 18)
 	isi.add_theme_color_override("font_color", Color(0.95, 0.9, 0.8))

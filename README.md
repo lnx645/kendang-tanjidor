@@ -2,6 +2,8 @@
 
 Kit kendang virtual ala Real Drum: tampak dari atas, pukul pad-padnya langsung dari layar HP.
 
+**Genre: Kendang Bajidor — kesenian Sunda** (bukan Tanjidor Betawi; nama repo tetap kendang-tanjidor).
+
 ## Isi kit
 DANG (tengah, terbesar) • TAK (kiri) • ANAK (kanan) • KETIPUNG • KULANTER • KECREK • KEMPUL • GONG • PAK (blok kayu). Multi-sentuh: pukul beberapa pad sekaligus.
 
