@@ -1,5 +1,5 @@
 extends Node2D
-## Kendang Virtual v3.0 — composition root.
+## Kendang Virtual v3.1 — composition root.
 ## Merakit domain (State), services (BankSuara/MesinSuara/Penyimpanan),
 ## dan UI (Panggung + Hud), lalu merutekan input panggung & siklus gambar.
 ## Genre: Kendang Bajidor — Sunda (bukan Tanjidor Betawi).
@@ -36,7 +36,7 @@ func _ready() -> void:
 	mesin.panaskan(state)
 	_sesuaikan_ukuran()
 	get_tree().root.size_changed.connect(_sesuaikan_ukuran)
-	Engine.max_fps = 120
+	Engine.max_fps = 240
 	hud.panggung_berubah.connect(func() -> void: panggung.segarkan_latar())
 	hud.pengaturan_berubah.connect(func() -> void: simpan.simpan_pengaturan(state))
 	hud.minta_atur.connect(_atur_mode)

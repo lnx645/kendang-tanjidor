@@ -29,6 +29,7 @@ var _bar_atur: PanelContainer
 var _geser_ukuran: GeserKustom
 var _label_target_atur: Label
 var _label_petunjuk: Label
+var _label_latensi: Label
 var _toast: Label
 var _toast_timer: Timer
 # Pemilih berkas
@@ -105,6 +106,9 @@ func buka_panel(nama: String) -> void:
 		(_panel[k] as PanelContainer).visible = k == nama
 	if nama == "suara":
 		_segarkan_suara()
+	if nama == "tentang" and _label_latensi:
+		var ms := AudioServer.get_output_latency() * 1000.0
+		_label_latensi.text = "Latensi keluaran audio yang dilaporkan HP ini: %.0f ms. Itu batas perangkat (digitizer sentuh + jalur audio Android) dan dibagi semua aplikasi drum. Jeda dari aplikasinya sendiri ~0: suara dimuat di depan & serangannya ≤2 ms." % ms
 	if nama == "preset":
 		_segarkan_preset()
 
@@ -379,9 +383,12 @@ func _format_waktu(detik: float) -> String:
 
 func _bangun_panel_tentang() -> void:
 	var v := _buat_panel("tentang", "Tentang & Kredit")
-	var isi := GayaUI.label("Kendang Virtual v3.0 — kit Kendang Bajidor (Sunda) tampak atas ala Real Drum. Bajidor itu kesenian Sunda — bukan Tanjidor Betawi.\n\nFitur: pukul multi-sentuh + gesek antar pad, Tema kit, Preset (simpan/muat/ekspor/impor JSON), custom suara per pad (bawaan/impor MP3-WAV), mode Atur, pemutar MP3 pengiring.\n\nUI \"Emas Panggung\": seluruh tombol, panel & slider digambar kustom dari kode. Semua suara kendang disintesis dari kode.", 18)
+	var isi := GayaUI.label("Kendang Virtual v3.1 — kit Kendang Bajidor (Sunda) tampak atas ala Real Drum. Bajidor itu kesenian Sunda — bukan Tanjidor Betawi.\n\nFitur: pukul multi-sentuh + gesek antar pad, Tema kit, Preset (simpan/muat/ekspor/impor JSON), custom suara per pad (bawaan/impor MP3-WAV), mode Atur, pemutar MP3 pengiring.\n\nUI \"Emas Panggung\": seluruh tombol, panel & slider digambar kustom dari kode. Semua suara kendang disintesis dari kode.", 18)
 	isi.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	v.add_child(isi)
+	_label_latensi = GayaUI.label("", 16, GayaUI.EMAS_TERANG)
+	_label_latensi.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	v.add_child(_label_latensi)
 
 # ---------- Bilah Atur ----------
 
