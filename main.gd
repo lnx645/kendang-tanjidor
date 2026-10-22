@@ -1,83 +1,87 @@
 extends Node2D
-## Kendang Virtual v2.0 — kendang virtual ala Real Drum: pukul langsung di layar.
-## Fitur: custom audio per pad, custom posisi pad, custom skin, putar MP3 pengiring.
+## Kendang Virtual v2.1 — kit kendang virtual ala Real Drum (tampak atas).
+## Pukul langsung multi-sentuh. Custom: tema kit, audio per pad, posisi pad,
+## preset (simpan/muat/hapus), dan pemutar MP3 pengiring.
 
 const LEBAR := 1280.0
 const TINGGI := 720.0
 const JALUR_SIMPAN := "user://pengaturan.cfg"
+const JALUR_PRESET := "user://preset.cfg"
 
-const DAFTAR_KULIT := {
-	"klasik": {"nama": "Kayu Klasik", "berkas": "res://aset/kendang-klasik.png", "modus": "isi"},
-	"merah": {"nama": "Kayu Merah", "berkas": "res://aset/kendang-merah.png", "modus": "isi"},
-	"foto": {"nama": "Foto Panggung", "berkas": "res://aset/foto-panggung.jpg", "modus": "penuh"},
-	"sendiri": {"nama": "Skin Sendiri", "berkas": "", "modus": "penuh"},
+# Tema kit: palet warna pad & latar (pad digambar vektor berlapis)
+const DAFTAR_TEMA := {
+	"jati": {"nama": "Kayu Jati", "latar1": Color(0.13, 0.08, 0.05), "latar2": Color(0.05, 0.03, 0.02),
+		"rim": Color(0.48, 0.29, 0.15), "rim_gelap": Color(0.28, 0.16, 0.08), "tali": Color(0.92, 0.80, 0.58),
+		"kepala": Color(0.85, 0.63, 0.36), "kepala_terang": Color(0.98, 0.85, 0.60), "logam": Color(0.85, 0.66, 0.28)},
+	"panggung": {"nama": "Hitam Panggung", "latar1": Color(0.07, 0.08, 0.10), "latar2": Color(0.02, 0.02, 0.03),
+		"rim": Color(0.20, 0.21, 0.25), "rim_gelap": Color(0.09, 0.09, 0.11), "tali": Color(0.55, 0.58, 0.65),
+		"kepala": Color(0.24, 0.25, 0.29), "kepala_terang": Color(0.38, 0.40, 0.46), "logam": Color(0.62, 0.55, 0.35)},
+	"merah": {"nama": "Merah Ukir", "latar1": Color(0.16, 0.06, 0.04), "latar2": Color(0.07, 0.02, 0.02),
+		"rim": Color(0.55, 0.24, 0.13), "rim_gelap": Color(0.32, 0.13, 0.07), "tali": Color(0.95, 0.82, 0.60),
+		"kepala": Color(0.90, 0.68, 0.40), "kepala_terang": Color(0.99, 0.87, 0.62), "logam": Color(0.88, 0.68, 0.30)},
+	"sendiri": {"nama": "Latar Sendiri", "latar1": Color(0.13, 0.08, 0.05), "latar2": Color(0.05, 0.03, 0.02),
+		"rim": Color(0.48, 0.29, 0.15), "rim_gelap": Color(0.28, 0.16, 0.08), "tali": Color(0.92, 0.80, 0.58),
+		"kepala": Color(0.85, 0.63, 0.36), "kepala_terang": Color(0.98, 0.85, 0.60), "logam": Color(0.85, 0.66, 0.28)},
 }
 
-# Definisi pad: suara bawaan (bisa diganti), warna aksen, gaya gambar
 const DEF_PAD := [
-	{"id": "tak", "nama": "TAK (kiri)", "bentuk": "kepala", "warna": Color(0.98, 0.80, 0.45), "suara": ["tak.wav", "tak_tajam.wav"]},
-	{"id": "dang", "nama": "DANG (kanan)", "bentuk": "kepala", "warna": Color(0.98, 0.62, 0.30), "suara": ["dang.wav", "dang_rendah.wav", "dang_kering.wav"]},
-	{"id": "pak", "nama": "PAK (badan)", "bentuk": "kepala", "warna": Color(0.85, 0.55, 0.35), "suara": ["pak.wav", "pak_lembut.wav"]},
-	{"id": "ketipung", "nama": "KETIPUNG", "bentuk": "ketipung", "warna": Color(0.80, 0.58, 0.35), "suara": ["ketipung.wav", "ketipung_tinggi.wav"]},
-	{"id": "kecrek", "nama": "KECREK", "bentuk": "kecrek", "warna": Color(0.92, 0.85, 0.55), "suara": ["kecrek.wav", "kecrek_rapat.wav"]},
-	{"id": "kempul", "nama": "KEMPUL", "bentuk": "gong", "warna": Color(0.85, 0.68, 0.30), "suara": ["kempul.wav", "gong.wav"]},
-	{"id": "gong", "nama": "GONG", "bentuk": "gong", "warna": Color(0.95, 0.75, 0.32), "suara": ["gong.wav", "kempul.wav"]},
-	{"id": "terompet", "nama": "TEROMPET", "bentuk": "terompet", "warna": Color(0.90, 0.45, 0.35), "suara": ["terompet.wav"]},
+	{"id": "kecrek", "nama": "KECREK", "bentuk": "kecrek", "suara": ["kecrek.wav", "kecrek_rapat.wav"]},
+	{"id": "ketipung", "nama": "KETIPUNG", "bentuk": "drum", "suara": ["ketipung.wav", "ketipung_tinggi.wav"]},
+	{"id": "kulanter", "nama": "KULANTER", "bentuk": "drum", "suara": ["ketipung_tinggi.wav", "tak_tajam.wav"]},
+	{"id": "kempul", "nama": "KEMPUL", "bentuk": "gong", "suara": ["kempul.wav", "gong.wav"]},
+	{"id": "gong", "nama": "GONG", "bentuk": "gong", "suara": ["gong.wav", "kempul.wav"]},
+	{"id": "tak", "nama": "TAK", "bentuk": "drum", "suara": ["tak.wav", "tak_tajam.wav"]},
+	{"id": "dang", "nama": "DANG", "bentuk": "drum", "suara": ["dang.wav", "dang_rendah.wav", "dang_kering.wav"]},
+	{"id": "anak", "nama": "ANAK", "bentuk": "drum", "suara": ["ketipung.wav", "pak.wav", "dang_kering.wav"]},
+	{"id": "pak", "nama": "PAK", "bentuk": "blok", "suara": ["pak.wav", "pak_lembut.wav"]},
 ]
 
-# Tata letak bawaan per kulit (relatif 0..1 terhadap layar): [per pad: x, y, rx, ry]
+# Tata letak kit bawaan (relatif): x, y, rx, ry (ry = rx * 1280/720 agar bulat)
 const LETAK_BAWAAN := {
-	"klasik": {
-		"tak": [0.259, 0.459, 0.030, 0.105], "dang": [0.666, 0.415, 0.102, 0.210],
-		"pak": [0.455, 0.420, 0.052, 0.088], "ketipung": [0.115, 0.845, 0.062, 0.075],
-		"kecrek": [0.115, 0.150, 0.045, 0.080], "kempul": [0.885, 0.845, 0.048, 0.085],
-		"gong": [0.885, 0.150, 0.055, 0.098], "terompet": [0.500, 0.158, 0.042, 0.072],
-	},
-	"merah": {
-		"tak": [0.300, 0.440, 0.032, 0.110], "dang": [0.700, 0.415, 0.105, 0.215],
-		"pak": [0.470, 0.420, 0.052, 0.088], "ketipung": [0.115, 0.845, 0.062, 0.075],
-		"kecrek": [0.115, 0.150, 0.045, 0.080], "kempul": [0.885, 0.845, 0.048, 0.085],
-		"gong": [0.885, 0.150, 0.055, 0.098], "terompet": [0.500, 0.158, 0.042, 0.072],
-	},
-	"foto": {
-		"tak": [0.245, 0.630, 0.070, 0.130], "dang": [0.400, 0.720, 0.088, 0.165],
-		"pak": [0.560, 0.600, 0.055, 0.090], "ketipung": [0.115, 0.845, 0.062, 0.075],
-		"kecrek": [0.075, 0.150, 0.045, 0.080], "kempul": [0.885, 0.845, 0.048, 0.085],
-		"gong": [0.925, 0.150, 0.055, 0.098], "terompet": [0.500, 0.158, 0.042, 0.072],
-	},
+	"kecrek": [0.085, 0.260, 0.048, 0.086], "ketipung": [0.265, 0.235, 0.062, 0.111],
+	"kulanter": [0.475, 0.225, 0.066, 0.117], "kempul": [0.685, 0.240, 0.064, 0.114],
+	"gong": [0.895, 0.260, 0.077, 0.136], "tak": [0.155, 0.600, 0.084, 0.150],
+	"dang": [0.455, 0.565, 0.119, 0.211], "anak": [0.755, 0.585, 0.087, 0.156],
+	"pak": [0.475, 0.860, 0.058, 0.068],
 }
-const LETAK_SENDIRI := {
-	"tak": [0.259, 0.459, 0.045, 0.105], "dang": [0.666, 0.415, 0.102, 0.210],
-	"pak": [0.455, 0.420, 0.052, 0.088], "ketipung": [0.115, 0.845, 0.062, 0.075],
-	"kecrek": [0.115, 0.150, 0.045, 0.080], "kempul": [0.885, 0.845, 0.048, 0.085],
-	"gong": [0.885, 0.150, 0.055, 0.098], "terompet": [0.500, 0.158, 0.042, 0.072],
+# Preset pabrik kedua: kit rapat ke tengah
+const LETAK_RAPAT := {
+	"kecrek": [0.200, 0.250, 0.048, 0.086], "ketipung": [0.360, 0.230, 0.062, 0.111],
+	"kulanter": [0.530, 0.230, 0.066, 0.117], "kempul": [0.690, 0.240, 0.064, 0.114],
+	"gong": [0.840, 0.260, 0.077, 0.136], "tak": [0.270, 0.580, 0.084, 0.150],
+	"dang": [0.500, 0.555, 0.119, 0.211], "anak": [0.730, 0.580, 0.087, 0.156],
+	"pak": [0.500, 0.860, 0.058, 0.068],
 }
 
-var kulit_ini := "klasik"
-var tekstur_kulit: Texture2D = null
-var berkas_kulit_sendiri := ""
-var pads: Array = []            # {def, x, y, rx, ry, skala, kedip, suara_aktif, nada}
-var pemain: Array = []          # kumpulan AudioStreamPlayer untuk polifoni
+var tema_ini := "jati"
+var tekstur_latar: Texture2D = null
+var berkas_latar_sendiri := ""
+var pads: Array = []
+var pemain: Array = []
 var giliran_pemain := 0
 var modus_atur := false
 var pad_seret: Dictionary = {}
 var pad_pilih: Dictionary = {}
-var panel_terbuka := ""         # "", "kulit", "suara", "video", "tentang"
+var panel_terbuka := ""
 var rng := RandomNumberGenerator.new()
+var nama_preset_ini := ""
 
 var lapis: CanvasLayer
-var panel_kulit: PanelContainer
+var panel_tema: PanelContainer
 var panel_suara: PanelContainer
+var panel_preset: PanelContainer
 var panel_mp3: PanelContainer
 var panel_tentang: PanelContainer
 var bar_atur: PanelContainer
 var penggeser_ukuran: HSlider
 var label_status: Label
+var daftar_suara: VBoxContainer
+var daftar_preset: VBoxContainer
+var isian_nama_preset: LineEdit
 var pemutar_musik: AudioStreamPlayer
 var label_lagu: Label
 var geser_posisi: HSlider
 var label_waktu: Label
-var daftar_suara: VBoxContainer
 var cek_ulangi: CheckBox
 
 func _ready() -> void:
@@ -88,7 +92,7 @@ func _ready() -> void:
 	add_child(pemutar_musik)
 	siapkan_pads()
 	muat_pengaturan()
-	terapkan_kulit()
+	terapkan_tema()
 	bangun_ui()
 	queue_redraw()
 
@@ -104,52 +108,41 @@ func siapkan_pads() -> void:
 	for d in DEF_PAD:
 		var def: Dictionary = d
 		pads.append({
-			"def": def, "x": 0.5, "y": 0.5, "rx": 0.05, "ry": 0.09, "skala": 1.0,
+			"def": def, "x": 0.5, "y": 0.5, "rx": 0.06, "ry": 0.1, "skala": 1.0,
 			"kedip": 0.0, "suara_aktif": "res://audio/" + String(def["suara"][0]),
 			"nada": null,
 		})
 
-func letak_untuk(kulit: String) -> Dictionary:
-	if kulit == "sendiri":
-		return LETAK_SENDIRI
-	return LETAK_BAWAAN.get(kulit, LETAK_BAWAAN["klasik"])
-
-func pasang_letak(kulit: String, pakai_simpan: bool) -> void:
-	var dasar: Dictionary = letak_untuk(kulit)
+func pasang_letak(dasar: Dictionary, pakai_simpan: bool, kunci_tema: String) -> void:
 	var cfg := ConfigFile.new()
 	var ada := cfg.load(JALUR_SIMPAN) == OK
 	for pad in pads:
 		var id := String(pad["def"]["id"])
-		var l: Array = dasar.get(id, [0.5, 0.5, 0.05, 0.09])
+		var l: Array = dasar.get(id, [0.5, 0.5, 0.06, 0.1])
 		pad["x"] = float(l[0]); pad["y"] = float(l[1])
 		pad["rx"] = float(l[2]); pad["ry"] = float(l[3]); pad["skala"] = 1.0
 		if pakai_simpan and ada:
-			var kunci := kulit + "/" + id
+			var kunci := kunci_tema + "/" + id
 			pad["x"] = float(cfg.get_value("letak", kunci + "_x", pad["x"]))
 			pad["y"] = float(cfg.get_value("letak", kunci + "_y", pad["y"]))
 			pad["skala"] = float(cfg.get_value("letak", kunci + "_s", 1.0))
 
-func terapkan_kulit() -> void:
-	var info: Dictionary = DAFTAR_KULIT[kulit_ini]
-	var jalur := String(info["berkas"])
-	if kulit_ini == "sendiri":
-		jalur = berkas_kulit_sendiri
-	tekstur_kulit = null
-	if jalur.begins_with("res://"):
-		tekstur_kulit = load(jalur)
-	elif jalur != "" and FileAccess.file_exists(jalur):
+func terapkan_tema() -> void:
+	tekstur_latar = null
+	if tema_ini == "sendiri" and berkas_latar_sendiri != "" and FileAccess.file_exists(berkas_latar_sendiri):
 		var gbr := Image.new()
-		if gbr.load(jalur) == OK:
-			tekstur_kulit = ImageTexture.create_from_image(gbr)
-	pasang_letak(kulit_ini, true)
+		if gbr.load(berkas_latar_sendiri) == OK:
+			tekstur_latar = ImageTexture.create_from_image(gbr)
+	pasang_letak(LETAK_BAWAAN, true, tema_ini)
 
 func muat_pengaturan() -> void:
 	var cfg := ConfigFile.new()
 	if cfg.load(JALUR_SIMPAN) != OK:
-		pasang_letak(kulit_ini, false)
+		pasang_letak(LETAK_BAWAAN, false, tema_ini)
 		return
-	kulit_ini = String(cfg.get_value("umum", "kulit", "klasik"))
-	berkas_kulit_sendiri = String(cfg.get_value("umum", "kulit_sendiri", ""))
+	tema_ini = String(cfg.get_value("umum", "tema", "jati"))
+	berkas_latar_sendiri = String(cfg.get_value("umum", "latar_sendiri", ""))
+	nama_preset_ini = String(cfg.get_value("umum", "preset", ""))
 	var vol := float(cfg.get_value("umum", "volume", 0.9))
 	AudioServer.set_bus_volume_db(0, linear_to_db(maxf(vol, 0.001)))
 	for pad in pads:
@@ -159,16 +152,76 @@ func muat_pengaturan() -> void:
 func simpan_pengaturan() -> void:
 	var cfg := ConfigFile.new()
 	cfg.load(JALUR_SIMPAN)
-	cfg.set_value("umum", "kulit", kulit_ini)
-	cfg.set_value("umum", "kulit_sendiri", berkas_kulit_sendiri)
+	cfg.set_value("umum", "tema", tema_ini)
+	cfg.set_value("umum", "latar_sendiri", berkas_latar_sendiri)
+	cfg.set_value("umum", "preset", nama_preset_ini)
 	for pad in pads:
 		var id := String(pad["def"]["id"])
 		cfg.set_value("suara", id, String(pad["suara_aktif"]))
-		var kunci := kulit_ini + "/" + id
+		var kunci := tema_ini + "/" + id
 		cfg.set_value("letak", kunci + "_x", float(pad["x"]))
 		cfg.set_value("letak", kunci + "_y", float(pad["y"]))
 		cfg.set_value("letak", kunci + "_s", float(pad["skala"]))
 	cfg.save(JALUR_SIMPAN)
+
+# ---------- PRESET ----------
+
+func ambil_daftar_preset() -> Array:
+	var hasil := ["Panggung Klasik", "Rampak Rapat"]
+	var cfg := ConfigFile.new()
+	if cfg.load(JALUR_PRESET) == OK:
+		for s in cfg.get_sections():
+			hasil.append(s)
+	return hasil
+
+func simpan_preset(nama: String) -> void:
+	var cfg := ConfigFile.new()
+	cfg.load(JALUR_PRESET)
+	cfg.set_value(nama, "tema", tema_ini)
+	for pad in pads:
+		var id := String(pad["def"]["id"])
+		cfg.set_value(nama, id + "_x", float(pad["x"]))
+		cfg.set_value(nama, id + "_y", float(pad["y"]))
+		cfg.set_value(nama, id + "_s", float(pad["skala"]))
+		cfg.set_value(nama, id + "_suara", String(pad["suara_aktif"]))
+	cfg.save(JALUR_PRESET)
+	nama_preset_ini = nama
+	simpan_pengaturan()
+
+func muat_preset(nama: String) -> void:
+	if nama == "Panggung Klasik":
+		pasang_letak(LETAK_BAWAAN, false, tema_ini)
+	elif nama == "Rampak Rapat":
+		tema_ini = "panggung"
+		terapkan_tema()
+		pasang_letak(LETAK_RAPAT, false, tema_ini)
+	else:
+		var cfg := ConfigFile.new()
+		if cfg.load(JALUR_PRESET) != OK:
+			return
+		tema_ini = String(cfg.get_value(nama, "tema", tema_ini))
+		terapkan_tema()
+		for pad in pads:
+			var id := String(pad["def"]["id"])
+			pad["x"] = float(cfg.get_value(nama, id + "_x", pad["x"]))
+			pad["y"] = float(cfg.get_value(nama, id + "_y", pad["y"]))
+			pad["skala"] = float(cfg.get_value(nama, id + "_s", 1.0))
+			pad["suara_aktif"] = String(cfg.get_value(nama, id + "_suara", pad["suara_aktif"]))
+			pad["nada"] = null
+	nama_preset_ini = nama
+	simpan_pengaturan()
+	queue_redraw()
+
+func hapus_preset(nama: String) -> void:
+	var cfg := ConfigFile.new()
+	if cfg.load(JALUR_PRESET) == OK and cfg.has_section(nama):
+		cfg.erase_section(nama)
+		cfg.save(JALUR_PRESET)
+	if nama_preset_ini == nama:
+		nama_preset_ini = ""
+		simpan_pengaturan()
+
+# ---------- SUARA ----------
 
 func muat_nada(pad: Dictionary) -> AudioStream:
 	var jalur := String(pad["suara_aktif"])
@@ -190,7 +243,6 @@ func baca_wav(jalur: String) -> AudioStreamWAV:
 	w.format = AudioStreamWAV.FORMAT_16_BITS
 	w.mix_rate = 44100
 	w.stereo = false
-	# Pindai sub-chunk fmt & data (WAV standar)
 	var pos := 12
 	var data_mulai := -1
 	var data_ukuran := 0
@@ -230,7 +282,6 @@ func pukul(pad: Dictionary) -> void:
 	queue_redraw()
 
 func pad_di(pos: Vector2) -> Dictionary:
-	# Pad terakhir digambar = paling atas
 	for i in range(pads.size() - 1, -1, -1):
 		var pad: Dictionary = pads[i]
 		var cx := float(pad["x"]) * LEBAR
@@ -311,111 +362,119 @@ func _process(delta: float) -> void:
 	if berubah:
 		queue_redraw()
 
+func format_waktu(detik: float) -> String:
+	var d := int(detik)
+	return "%d:%02d" % [d / 60, d % 60]
+
 # ---------- GAMBAR ----------
 
-func rect_kulit() -> Rect2:
-	if tekstur_kulit == null:
-		return Rect2()
-	var info: Dictionary = DAFTAR_KULIT[kulit_ini]
-	var uk := tekstur_kulit.get_size()
-	if String(info["modus"]) == "isi":
-		var s := minf(LEBAR / uk.x, TINGGI / uk.y)
-		var w := uk.x * s
-		var h := uk.y * s
-		return Rect2((LEBAR - w) / 2.0, (TINGGI - h) / 2.0, w, h)
-	var s2 := maxf(LEBAR / uk.x, TINGGI / uk.y)
-	var w2 := uk.x * s2
-	var h2 := uk.y * s2
-	return Rect2((LEBAR - w2) / 2.0, (TINGGI - h2) / 2.0, w2, h2)
+func palet() -> Dictionary:
+	return DAFTAR_TEMA[tema_ini]
 
-func elips(tengah: Vector2, rx: float, ry: float, warna: Color, isi: bool = true) -> void:
+func lingkaran(tengah: Vector2, r: float, warna: Color) -> void:
+	draw_circle(tengah, r, warna)
+
+func elips_garis(tengah: Vector2, rx: float, ry: float, warna: Color, lebar: float = 3.0) -> void:
 	var titik := PackedVector2Array()
-	for i in 40:
+	for i in 41:
 		var a := TAU * float(i) / 40.0
 		titik.append(tengah + Vector2(cos(a) * rx, sin(a) * ry))
-	if isi:
-		draw_colored_polygon(titik, warna)
-	else:
-		titik.append(titik[0])
-		draw_polyline(titik, warna, 3.0, true)
+	draw_polyline(titik, warna, lebar, true)
 
 func _draw() -> void:
-	# Latar: gradasi langit senja hangat
-	for i in 24:
-		var t := float(i) / 24.0
-		var c := Color(0.16, 0.08, 0.10).lerp(Color(0.45, 0.20, 0.12), t)
-		draw_rect(Rect2(0, TINGGI * t, LEBAR, TINGGI / 24.0 + 1), c)
-	# Bendera segitiga (hiasan festival)
-	for i in 16:
-		var x0 := float(i) * (LEBAR / 15.0)
-		var tengah := Vector2(x0 + LEBAR / 30.0, 26.0 + 10.0 * sin(float(i) * 1.3))
-		var palet: Array[Color] = [Color(0.95, 0.45, 0.35), Color(0.98, 0.80, 0.40), Color(0.55, 0.85, 0.55), Color(0.45, 0.70, 0.95)]
-		var warna: Color = palet[i % 4]
-		draw_colored_polygon(PackedVector2Array([Vector2(x0, 6), Vector2(x0 + LEBAR / 15.0, 6), tengah]), warna)
-	# Lantai panggung
-	draw_rect(Rect2(0, TINGGI - 64, LEBAR, 64), Color(0.23, 0.13, 0.09))
-	draw_rect(Rect2(0, TINGGI - 64, LEBAR, 4), Color(0.55, 0.35, 0.18))
-	# Kulit / skin
-	if tekstur_kulit != null:
-		draw_texture_rect(tekstur_kulit, rect_kulit(), false)
-	# Pads
+	var p := palet()
+	if tekstur_latar != null:
+		var uk := tekstur_latar.get_size()
+		var s := maxf(LEBAR / uk.x, TINGGI / uk.y)
+		draw_texture_rect(tekstur_latar, Rect2((LEBAR - uk.x * s) / 2, (TINGGI - uk.y * s) / 2, uk.x * s, uk.y * s), false)
+	else:
+		# Latar panggung gelap + pola lubang (perforated) ala Real Drum
+		for i in 24:
+			var t := float(i) / 24.0
+			var c: Color = p["latar1"]
+			c = c.lerp(p["latar2"], t)
+			draw_rect(Rect2(0, TINGGI * t, LEBAR, TINGGI / 24.0 + 1), c)
+		var titik := Color(1, 1, 1, 0.045)
+		for gx in range(24, int(LEBAR), 48):
+			for gy in range(88, int(TINGGI) - 8, 48):
+				draw_circle(Vector2(gx, gy), 5.0, titik)
+		# Garis cahaya panggung
+		draw_rect(Rect2(0, TINGGI * 0.80, LEBAR, 3), Color(0.35, 0.55, 0.95, 0.30))
 	for pad in pads:
 		gambar_pad(pad)
+	for pad in pads:
+		gambar_nama(pad)
 	if modus_atur:
 		draw_string(ThemeDB.fallback_font, Vector2(24, 112), "MODE ATUR: seret pad untuk memindah", HORIZONTAL_ALIGNMENT_LEFT, -1, 22, Color(1, 0.95, 0.8))
 
+func gambar_nama(pad: Dictionary) -> void:
+	var def: Dictionary = pad["def"]
+	var tengah := Vector2(float(pad["x"]) * LEBAR, float(pad["y"]) * TINGGI)
+	var ry := float(pad["ry"]) * float(pad["skala"]) * TINGGI
+	var geser := ry + 24
+	if String(def["id"]) == "pak":
+		geser = 6
+	var pos := tengah + Vector2(0, geser)
+	draw_string(ThemeDB.fallback_font, pos + Vector2(1, 1), String(def["nama"]), HORIZONTAL_ALIGNMENT_CENTER, -1, 18, Color(0, 0, 0, 0.7))
+	draw_string(ThemeDB.fallback_font, pos, String(def["nama"]), HORIZONTAL_ALIGNMENT_CENTER, -1, 18, Color(1, 0.97, 0.9, 0.95))
+
 func gambar_pad(pad: Dictionary) -> void:
 	var def: Dictionary = pad["def"]
+	var p := palet()
 	var cx := float(pad["x"]) * LEBAR
 	var cy := float(pad["y"]) * TINGGI
 	var rx := float(pad["rx"]) * float(pad["skala"]) * LEBAR
 	var ry := float(pad["ry"]) * float(pad["skala"]) * TINGGI
 	var tengah := Vector2(cx, cy)
 	var kedip := float(pad["kedip"])
-	var aksen: Color = def["warna"]
 	var bentuk := String(def["bentuk"])
-	if bentuk == "kepala":
-		# Cincin halus di atas muka kendang; menyala saat dipukul
-		var a := 0.16 + 0.55 * kedip + (0.20 if modus_atur else 0.0)
-		elips(tengah, rx, ry, Color(aksen.r, aksen.g, aksen.b, a * 0.5))
-		elips(tengah, rx, ry, Color(aksen.r, aksen.g, aksen.b, a), false)
-		if kedip > 0.0:
-			elips(tengah, rx * (1.0 + 0.10 * kedip), ry * (1.0 + 0.10 * kedip), Color(1, 1, 1, 0.35 * kedip), false)
+	var r := rx  # pad bulat: rx (px) dipakai sebagai jari-jari visual
+	# Bayangan di lantai
+	draw_circle(tengah + Vector2(0, ry * 0.92), rx * 0.95, Color(0, 0, 0, 0.35))
+	if bentuk == "drum":
+		# Rim luar gelap -> rim kayu -> ring tali -> kepala bergradasi
+		lingkaran(tengah, r, p["rim_gelap"])
+		lingkaran(tengah, r * 0.965, p["rim"])
+		for i in 12:
+			var a := TAU * float(i) / 12.0
+			var pos_tali := tengah + Vector2(cos(a) * r * 0.915, sin(a) * r * 0.915)
+			draw_circle(pos_tali, r * 0.045, p["tali"])
+		lingkaran(tengah, r * 0.875, p["kepala"])
+		for k in 5:
+			var t := float(k) / 5.0
+			var ck: Color = p["kepala"]
+			ck = ck.lerp(p["kepala_terang"], t * 0.85)
+			lingkaran(tengah, r * 0.875 * (1.0 - t * 0.72), ck)
+		draw_arc(tengah, r * 0.875, PI * 0.9, PI * 1.7, 24, Color(0, 0, 0, 0.20), r * 0.05, true)
+		lingkaran(tengah, r * 0.20, Color(1, 1, 1, 0.10))
 	elif bentuk == "gong":
-		draw_circle(tengah, rx, Color(0.45, 0.32, 0.12))
-		draw_circle(tengah, rx * 0.88, Color(0.85, 0.66, 0.28))
-		draw_circle(tengah, rx * 0.55, Color(0.92, 0.74, 0.35))
-		draw_circle(tengah, rx * 0.26, Color(0.98, 0.84, 0.45))
-		if kedip > 0.0 or modus_atur:
-			draw_arc(tengah, rx + 3, 0, TAU, 40, Color(aksen.r, aksen.g, aksen.b, 0.35 + 0.6 * kedip), 3.5, true)
+		lingkaran(tengah, r, Color(0.30, 0.22, 0.08))
+		lingkaran(tengah, r * 0.94, p["logam"])
+		lingkaran(tengah, r * 0.72, Color(p["logam"].r * 1.08, p["logam"].g * 1.08, p["logam"].b * 1.05))
+		lingkaran(tengah, r * 0.46, p["logam"])
+		lingkaran(tengah, r * 0.24, Color(1.0, 0.92, 0.62))
+		draw_arc(tengah, r * 0.83, PI * 1.05, PI * 1.6, 20, Color(1, 1, 1, 0.18), r * 0.06, true)
 	elif bentuk == "kecrek":
+		lingkaran(tengah, r, Color(0.16, 0.16, 0.18))
+		lingkaran(tengah, r * 0.92, Color(0.62, 0.63, 0.66))
 		for i in 8:
 			var a := TAU * float(i) / 8.0
-			draw_circle(tengah + Vector2(cos(a) * rx * 0.72, sin(a) * ry * 0.72), rx * 0.20, Color(0.88, 0.80, 0.45))
-		draw_circle(tengah, rx * 0.30, Color(0.95, 0.88, 0.55))
-		if kedip > 0.0 or modus_atur:
-			draw_arc(tengah, rx + 3, 0, TAU, 40, Color(aksen.r, aksen.g, aksen.b, 0.35 + 0.6 * kedip), 3.0, true)
-	elif bentuk == "ketipung":
-		elips(tengah, rx, ry * 0.62, Color(0.55, 0.36, 0.20))
-		elips(tengah, rx, ry * 0.62, Color(0.30, 0.19, 0.10), false)
-		elips(tengah - Vector2(rx * 0.72, 0), rx * 0.24, ry * 0.45, Color(0.92, 0.80, 0.58))
-		elips(tengah + Vector2(rx * 0.72, 0), rx * 0.24, ry * 0.45, Color(0.95, 0.84, 0.62))
-		if kedip > 0.0 or modus_atur:
-			elips(tengah, rx + 3, ry * 0.62 + 3, Color(aksen.r, aksen.g, aksen.b, 0.35 + 0.6 * kedip), false)
-	elif bentuk == "terompet":
-		var bell := tengah + Vector2(rx * 0.55, 0)
-		draw_colored_polygon(PackedVector2Array([
-			tengah - Vector2(rx * 0.8, ry * 0.14), bell - Vector2(0, ry * 0.62),
-			bell + Vector2(0, ry * 0.62), tengah + Vector2(-rx * 0.8, ry * 0.14)]), Color(0.88, 0.60, 0.25))
-		elips(bell, rx * 0.20, ry * 0.62, Color(0.97, 0.78, 0.38))
-		if kedip > 0.0 or modus_atur:
-			elips(tengah, rx + 3, ry + 3, Color(aksen.r, aksen.g, aksen.b, 0.35 + 0.6 * kedip), false)
-	# Nama pad
-	if modus_atur or bentuk != "kepala":
-		var label := String(def["nama"])
-		draw_string(ThemeDB.fallback_font, tengah + Vector2(0, ry + 22), label, HORIZONTAL_ALIGNMENT_CENTER, -1, 17, Color(1, 0.97, 0.88, 0.95))
-	if modus_atur and pad == pad_pilih:
-		elips(tengah, rx + 8, ry + 8, Color(1, 1, 1, 0.9), false)
+			draw_circle(tengah + Vector2(cos(a) * r * 0.66, sin(a) * r * 0.66), r * 0.17, Color(0.88, 0.86, 0.60))
+		lingkaran(tengah, r * 0.26, Color(0.80, 0.79, 0.72))
+	elif bentuk == "blok":
+		# Blok kayu PAK
+		var kotak := Rect2(tengah - Vector2(rx, ry * 0.62), Vector2(rx * 2, ry * 1.24))
+		draw_rect(kotak, Color(0.30, 0.18, 0.09))
+		draw_rect(kotak.grow(-5), p["rim"])
+		draw_rect(Rect2(tengah - Vector2(rx * 0.7, 3), Vector2(rx * 1.4, 6)), Color(0.22, 0.12, 0.05))
+	if kedip > 0.0:
+		lingkaran(tengah, r * 0.875 if bentuk == "drum" else r * 0.9, Color(1, 1, 1, 0.22 * kedip))
+		elips_garis(tengah, rx * (1.05 + 0.12 * kedip), ry * (1.05 + 0.12 * kedip), Color(1, 0.98, 0.85, 0.55 * kedip), 4.0)
+	if modus_atur:
+		elips_garis(tengah, rx + 4, ry + 4, Color(1, 0.9, 0.5, 0.55), 2.5)
+		if pad == pad_pilih:
+			elips_garis(tengah, rx + 10, ry + 10, Color(1, 1, 1, 0.95), 3.5)
+
 
 # ---------- UI ----------
 
@@ -423,13 +482,13 @@ func gaya_tombol() -> Dictionary:
 	var biasa := StyleBoxTexture.new()
 	biasa.texture = load("res://aset/ui/button_rectangle_depth_gradient.png")
 	biasa.set_texture_margin_all(14)
-	biasa.content_margin_left = 18; biasa.content_margin_right = 18
-	biasa.content_margin_top = 10; biasa.content_margin_bottom = 10
+	biasa.content_margin_left = 16; biasa.content_margin_right = 16
+	biasa.content_margin_top = 9; biasa.content_margin_bottom = 9
 	var tekan := StyleBoxTexture.new()
 	tekan.texture = load("res://aset/ui/button_rectangle_depth_flat.png")
 	tekan.set_texture_margin_all(14)
-	tekan.content_margin_left = 18; tekan.content_margin_right = 18
-	tekan.content_margin_top = 10; tekan.content_margin_bottom = 10
+	tekan.content_margin_left = 16; tekan.content_margin_right = 16
+	tekan.content_margin_top = 9; tekan.content_margin_bottom = 9
 	return {"biasa": biasa, "tekan": tekan}
 
 func buat_tombol(teks: String, aksi: Callable) -> Button:
@@ -439,14 +498,14 @@ func buat_tombol(teks: String, aksi: Callable) -> Button:
 	b.add_theme_stylebox_override("normal", g["biasa"])
 	b.add_theme_stylebox_override("hover", g["biasa"])
 	b.add_theme_stylebox_override("pressed", g["tekan"])
-	b.add_theme_font_size_override("font_size", 22)
+	b.add_theme_font_size_override("font_size", 21)
 	b.add_theme_color_override("font_color", Color(0.25, 0.15, 0.05))
 	b.pressed.connect(aksi)
 	return b
 
 func gaya_panel() -> StyleBoxFlat:
 	var s := StyleBoxFlat.new()
-	s.bg_color = Color(0.13, 0.09, 0.08, 0.96)
+	s.bg_color = Color(0.10, 0.08, 0.07, 0.97)
 	s.set_corner_radius_all(18)
 	s.set_border_width_all(2)
 	s.border_color = Color(0.85, 0.62, 0.30)
@@ -458,74 +517,18 @@ func buat_panel() -> PanelContainer:
 	var p := PanelContainer.new()
 	p.add_theme_stylebox_override("panel", gaya_panel())
 	p.set_anchors_preset(Control.PRESET_TOP_LEFT)
-	p.custom_minimum_size = Vector2(760, 470)
-	p.size = Vector2(760, 470)
-	p.position = Vector2((LEBAR - 760) / 2, (TINGGI - 470) / 2)
+	p.custom_minimum_size = Vector2(820, 500)
+	p.size = Vector2(820, 500)
+	p.position = Vector2((LEBAR - 820) / 2, (TINGGI - 500) / 2)
 	p.visible = false
 	return p
 
 func judul_panel(teks: String) -> Label:
 	var l := Label.new()
 	l.text = teks
-	l.add_theme_font_size_override("font_size", 30)
+	l.add_theme_font_size_override("font_size", 29)
 	l.add_theme_color_override("font_color", Color(0.98, 0.82, 0.50))
 	return l
-
-func bangun_ui() -> void:
-	lapis = CanvasLayer.new()
-	add_child(lapis)
-	# Bilah atas
-	var atas := PanelContainer.new()
-	atas.add_theme_stylebox_override("panel", gaya_panel())
-	atas.set_anchors_preset(Control.PRESET_TOP_WIDE)
-	lapis.add_child(atas)
-	var isi_atas := HBoxContainer.new()
-	isi_atas.add_theme_constant_override("separation", 10)
-	atas.add_child(isi_atas)
-	var judul := Label.new()
-	judul.text = "KENDANG VIRTUAL"
-	judul.add_theme_font_size_override("font_size", 30)
-	judul.add_theme_color_override("font_color", Color(0.98, 0.82, 0.50))
-	judul.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	isi_atas.add_child(judul)
-	var ruang := Control.new()
-	ruang.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	isi_atas.add_child(ruang)
-	isi_atas.add_child(buat_tombol("Skin", func() -> void: buka_panel("kulit")))
-	isi_atas.add_child(buat_tombol("Suara", func() -> void: buka_panel("suara")))
-	isi_atas.add_child(buat_tombol("Atur", func() -> void: masuk_atur()))
-	isi_atas.add_child(buat_tombol("MP3", func() -> void: buka_panel("mp3")))
-	isi_atas.add_child(buat_tombol("Info", func() -> void: buka_panel("tentang")))
-	# Petunjuk kecil di bawah
-	label_status = Label.new()
-	label_status.text = "Pukul kendangnya! TAK = kepala kecil (kiri) • DANG = kepala besar (kanan)"
-	label_status.add_theme_font_size_override("font_size", 18)
-	label_status.add_theme_color_override("font_color", Color(1, 0.95, 0.85, 0.85))
-	label_status.set_anchors_preset(Control.PRESET_BOTTOM_WIDE)
-	label_status.offset_top = -42
-	label_status.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	lapis.add_child(label_status)
-	bangun_panel_kulit()
-	bangun_panel_suara()
-	bangun_panel_mp3()
-	bangun_panel_tentang()
-	bangun_bar_atur()
-
-func buka_panel(nama: String) -> void:
-	panel_terbuka = nama
-	panel_kulit.visible = nama == "kulit"
-	panel_suara.visible = nama == "suara"
-	panel_mp3.visible = nama == "mp3"
-	panel_tentang.visible = nama == "tentang"
-	if nama == "suara":
-		segarkan_panel_suara()
-
-func tutup_panel() -> void:
-	panel_terbuka = ""
-	panel_kulit.visible = false
-	panel_suara.visible = false
-	panel_mp3.visible = false
-	panel_tentang.visible = false
 
 func kepala_panel(teks: String, induk: VBoxContainer) -> void:
 	var baris := HBoxContainer.new()
@@ -536,41 +539,162 @@ func kepala_panel(teks: String, induk: VBoxContainer) -> void:
 	baris.add_child(buat_tombol("Tutup", func() -> void: tutup_panel()))
 	induk.add_child(baris)
 
-func bangun_panel_kulit() -> void:
-	panel_kulit = buat_panel()
-	lapis.add_child(panel_kulit)
-	var v := VBoxContainer.new()
-	v.add_theme_constant_override("separation", 14)
-	panel_kulit.add_child(v)
-	kepala_panel("Pilih Skin Kendang", v)
-	for id in DAFTAR_KULIT.keys():
-		var info: Dictionary = DAFTAR_KULIT[id]
-		var kunci := String(id)
-		v.add_child(buat_tombol(String(info["nama"]), func() -> void: pilih_kulit(kunci)))
-	v.add_child(buat_tombol("Impor Gambar Sendiri (PNG/JPG)", func() -> void: impor_gambar()))
+func bangun_ui() -> void:
+	lapis = CanvasLayer.new()
+	add_child(lapis)
+	var atas := PanelContainer.new()
+	atas.add_theme_stylebox_override("panel", gaya_panel())
+	atas.set_anchors_preset(Control.PRESET_TOP_WIDE)
+	lapis.add_child(atas)
+	var isi_atas := HBoxContainer.new()
+	isi_atas.add_theme_constant_override("separation", 8)
+	atas.add_child(isi_atas)
+	var judul := Label.new()
+	judul.text = "KENDANG VIRTUAL"
+	judul.add_theme_font_size_override("font_size", 28)
+	judul.add_theme_color_override("font_color", Color(0.98, 0.82, 0.50))
+	judul.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	isi_atas.add_child(judul)
+	var ruang := Control.new()
+	ruang.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	isi_atas.add_child(ruang)
+	isi_atas.add_child(buat_tombol("Tema", func() -> void: buka_panel("tema")))
+	isi_atas.add_child(buat_tombol("Preset", func() -> void: buka_panel("preset")))
+	isi_atas.add_child(buat_tombol("Suara", func() -> void: buka_panel("suara")))
+	isi_atas.add_child(buat_tombol("Atur", func() -> void: masuk_atur()))
+	isi_atas.add_child(buat_tombol("MP3", func() -> void: buka_panel("mp3")))
+	isi_atas.add_child(buat_tombol("Info", func() -> void: buka_panel("tentang")))
+	label_status = Label.new()
+	label_status.text = "Pukul kendangnya! DANG di tengah • TAK kiri • ANAK kanan"
+	label_status.add_theme_font_size_override("font_size", 17)
+	label_status.add_theme_color_override("font_color", Color(1, 0.95, 0.85, 0.75))
+	label_status.set_anchors_preset(Control.PRESET_BOTTOM_WIDE)
+	label_status.offset_top = -38
+	label_status.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	lapis.add_child(label_status)
+	bangun_panel_tema()
+	bangun_panel_preset()
+	bangun_panel_suara()
+	bangun_panel_mp3()
+	bangun_panel_tentang()
+	bangun_bar_atur()
 
-func pilih_kulit(id: String) -> void:
-	if id == "sendiri" and berkas_kulit_sendiri == "":
-		impor_gambar()
+func buka_panel(nama: String) -> void:
+	panel_terbuka = nama
+	panel_tema.visible = nama == "tema"
+	panel_preset.visible = nama == "preset"
+	panel_suara.visible = nama == "suara"
+	panel_mp3.visible = nama == "mp3"
+	panel_tentang.visible = nama == "tentang"
+	if nama == "suara":
+		segarkan_panel_suara()
+	if nama == "preset":
+		segarkan_panel_preset()
+
+func tutup_panel() -> void:
+	panel_terbuka = ""
+	panel_tema.visible = false
+	panel_preset.visible = false
+	panel_suara.visible = false
+	panel_mp3.visible = false
+	panel_tentang.visible = false
+
+func bangun_panel_tema() -> void:
+	panel_tema = buat_panel()
+	lapis.add_child(panel_tema)
+	var v := VBoxContainer.new()
+	v.add_theme_constant_override("separation", 13)
+	panel_tema.add_child(v)
+	kepala_panel("Tema Kit (Skin)", v)
+	for id in DAFTAR_TEMA.keys():
+		var info: Dictionary = DAFTAR_TEMA[id]
+		var kunci := String(id)
+		v.add_child(buat_tombol(String(info["nama"]), func() -> void: pilih_tema(kunci)))
+	var ket := Label.new()
+	ket.text = "\"Latar Sendiri\" memakai gambar dari HP sebagai latar panggung."
+	ket.add_theme_font_size_override("font_size", 16)
+	ket.add_theme_color_override("font_color", Color(0.9, 0.85, 0.75, 0.8))
+	v.add_child(ket)
+
+func pilih_tema(id: String) -> void:
+	if id == "sendiri" and berkas_latar_sendiri == "":
+		impor_latar()
 		return
-	kulit_ini = id
-	terapkan_kulit()
+	tema_ini = id
+	terapkan_tema()
 	simpan_pengaturan()
 	tutup_panel()
 	queue_redraw()
 
-func impor_gambar() -> void:
-	DisplayServer.file_dialog_show("Pilih gambar skin", "", "", false,
+func impor_latar() -> void:
+	DisplayServer.file_dialog_show("Pilih gambar latar", "", "", false,
 		DisplayServer.FILE_DIALOG_MODE_OPEN_FILE,
 		PackedStringArray(["*.png,*.jpg,*.jpeg,*.webp ; Gambar"]),
 		func(status: bool, jalur: PackedStringArray, _idx: int) -> void:
 			if status and jalur.size() > 0:
-				berkas_kulit_sendiri = jalur[0]
-				kulit_ini = "sendiri"
-				terapkan_kulit()
+				berkas_latar_sendiri = jalur[0]
+				tema_ini = "sendiri"
+				terapkan_tema()
 				simpan_pengaturan()
 				tutup_panel()
 				queue_redraw())
+
+func bangun_panel_preset() -> void:
+	panel_preset = buat_panel()
+	lapis.add_child(panel_preset)
+	var v := VBoxContainer.new()
+	v.add_theme_constant_override("separation", 10)
+	panel_preset.add_child(v)
+	kepala_panel("Manage Preset", v)
+	var baris := HBoxContainer.new()
+	baris.add_theme_constant_override("separation", 8)
+	isian_nama_preset = LineEdit.new()
+	isian_nama_preset.placeholder_text = "Nama preset baru…"
+	isian_nama_preset.custom_minimum_size = Vector2(430, 0)
+	isian_nama_preset.add_theme_font_size_override("font_size", 20)
+	baris.add_child(isian_nama_preset)
+	baris.add_child(buat_tombol("Simpan Preset", func() -> void:
+		var nm := isian_nama_preset.text.strip_edges()
+		if nm != "" and nm != "Panggung Klasik" and nm != "Rampak Rapat":
+			simpan_preset(nm)
+			isian_nama_preset.text = ""
+			segarkan_panel_preset()))
+	v.add_child(baris)
+	var gulir := ScrollContainer.new()
+	gulir.custom_minimum_size = Vector2(776, 290)
+	v.add_child(gulir)
+	daftar_preset = VBoxContainer.new()
+	daftar_preset.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	daftar_preset.add_theme_constant_override("separation", 8)
+	gulir.add_child(daftar_preset)
+	var ket := Label.new()
+	ket.text = "Preset menyimpan: tema, posisi & ukuran pad, dan suara tiap pad."
+	ket.add_theme_font_size_override("font_size", 16)
+	ket.add_theme_color_override("font_color", Color(0.9, 0.85, 0.75, 0.8))
+	v.add_child(ket)
+
+func segarkan_panel_preset() -> void:
+	for c in daftar_preset.get_children():
+		c.queue_free()
+	for nama in ambil_daftar_preset():
+		var nm := String(nama)
+		var baris := HBoxContainer.new()
+		baris.add_theme_constant_override("separation", 8)
+		var l := Label.new()
+		l.text = nm + ("  (aktif)" if nm == nama_preset_ini else "")
+		l.custom_minimum_size = Vector2(400, 0)
+		l.add_theme_font_size_override("font_size", 21)
+		l.add_theme_color_override("font_color", Color(0.98, 0.9, 0.75))
+		baris.add_child(l)
+		baris.add_child(buat_tombol("Muat", func() -> void:
+			muat_preset(nm)
+			tutup_panel()
+			segarkan_panel_preset()))
+		if nm != "Panggung Klasik" and nm != "Rampak Rapat":
+			baris.add_child(buat_tombol("Hapus", func() -> void:
+				hapus_preset(nm)
+				segarkan_panel_preset()))
+		daftar_preset.add_child(baris)
 
 func bangun_panel_suara() -> void:
 	panel_suara = buat_panel()
@@ -580,23 +704,20 @@ func bangun_panel_suara() -> void:
 	panel_suara.add_child(v)
 	kepala_panel("Custom Suara per Pad", v)
 	var gulir := ScrollContainer.new()
-	gulir.custom_minimum_size = Vector2(716, 300)
+	gulir.custom_minimum_size = Vector2(776, 330)
 	v.add_child(gulir)
-	var daftar := VBoxContainer.new()
-	daftar_suara = daftar
-	daftar.name = "DaftarSuara"
-	daftar.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	daftar.add_theme_constant_override("separation", 8)
-	gulir.add_child(daftar)
+	daftar_suara = VBoxContainer.new()
+	daftar_suara.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	daftar_suara.add_theme_constant_override("separation", 8)
+	gulir.add_child(daftar_suara)
 	var ket := Label.new()
-	ket.text = "Ganti = pilih suara bawaan lain • Impor = pakai berkas MP3/WAV dari HP"
+	ket.text = "Ganti = suara bawaan lain • Impor = berkas MP3/WAV dari HP"
 	ket.add_theme_font_size_override("font_size", 16)
 	ket.add_theme_color_override("font_color", Color(0.9, 0.85, 0.75, 0.8))
 	v.add_child(ket)
 
 func segarkan_panel_suara() -> void:
-	var daftar := daftar_suara
-	for c in daftar.get_children():
+	for c in daftar_suara.get_children():
 		c.queue_free()
 	for pad in pads:
 		var def: Dictionary = pad["def"]
@@ -605,20 +726,20 @@ func segarkan_panel_suara() -> void:
 		baris.add_theme_constant_override("separation", 8)
 		var nama := Label.new()
 		nama.text = String(def["nama"])
-		nama.custom_minimum_size = Vector2(180, 0)
+		nama.custom_minimum_size = Vector2(170, 0)
 		nama.add_theme_font_size_override("font_size", 20)
 		nama.add_theme_color_override("font_color", Color(0.98, 0.9, 0.75))
 		baris.add_child(nama)
 		var aktif := Label.new()
 		aktif.text = String(pad["suara_aktif"]).get_file()
-		aktif.custom_minimum_size = Vector2(220, 0)
+		aktif.custom_minimum_size = Vector2(230, 0)
 		aktif.add_theme_font_size_override("font_size", 18)
 		aktif.add_theme_color_override("font_color", Color(0.85, 0.8, 0.7))
 		baris.add_child(aktif)
 		baris.add_child(buat_tombol("Tes", func() -> void: pukul(pad_ini)))
 		baris.add_child(buat_tombol("Ganti", func() -> void: ganti_suara(pad_ini)))
 		baris.add_child(buat_tombol("Impor", func() -> void: impor_suara(pad_ini)))
-		daftar.add_child(baris)
+		daftar_suara.add_child(baris)
 
 func ganti_suara(pad: Dictionary) -> void:
 	var def: Dictionary = pad["def"]
@@ -710,10 +831,6 @@ func pilih_mp3() -> void:
 				geser_posisi.max_value = maxf(mp3.get_length(), 1.0)
 				geser_posisi.editable = true)
 
-func format_waktu(detik: float) -> String:
-	var d := int(detik)
-	return "%d:%02d" % [d / 60, d % 60]
-
 func bangun_panel_tentang() -> void:
 	panel_tentang = buat_panel()
 	lapis.add_child(panel_tentang)
@@ -722,7 +839,7 @@ func bangun_panel_tentang() -> void:
 	panel_tentang.add_child(v)
 	kepala_panel("Tentang & Kredit", v)
 	var isi := Label.new()
-	isi.text = "Kendang Virtual v2.0 — mainkan kendang tanjidor langsung dari layar.\n\nGambar kendang: ilustrasi Wikimedia Commons oleh Zhmila & Vidiyans (CC BY-SA 4.0); foto panggung: Kendang Drum Indonesia (CC BY-SA 4.0).\nTombol UI: Kenney UI Pack (CC0) — kenney.nl.\nSemua suara kendang disintesis dari kode. Panel MP3: putar lagu dari HP buat mengiringi permainan.\n\nAtur: geser posisi pad • Suara: ganti/impor bunyi per pad • Skin: ganti tampilan."
+	isi.text = "Kendang Virtual v2.1 — kit kendang tanjidor tampak atas ala Real Drum.\n\nFitur: pukul multi-sentuh, Tema kit, Preset (simpan/muat/hapus konfigurasi), custom suara per pad (bawaan/impor MP3-WAV), mode Atur (geser & ukur pad, tersimpan per tema), pemutar MP3 pengiring.\n\nTombol UI: Kenney UI Pack (CC0) — kenney.nl. Semua suara kendang disintesis dari kode."
 	isi.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	isi.add_theme_font_size_override("font_size", 18)
 	isi.add_theme_color_override("font_color", Color(0.95, 0.9, 0.8))
@@ -791,7 +908,7 @@ func bangun_bar_atur() -> void:
 		cfg.save(JALUR_SIMPAN))
 	h.add_child(geser_vol)
 	h.add_child(buat_tombol("Reset", func() -> void:
-		pasang_letak(kulit_ini, false)
+		pasang_letak(LETAK_BAWAAN, false, tema_ini)
 		simpan_pengaturan()
 		queue_redraw()))
 	h.add_child(buat_tombol("Selesai", func() -> void: keluar_atur()))
